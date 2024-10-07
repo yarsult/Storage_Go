@@ -12,5 +12,7 @@ func main() {
 		log.Fatal(err)
 	}
 	s.Set("key1", "val1")
-	fmt.Println(s.Get("key1"))
+	s.Set("key2", "754")
+	fmt.Println(*s.Get("key1"), s.GetKind("key1"))
+	fmt.Println(*s.Get("key2"), s.GetKind("key2"))
 }
