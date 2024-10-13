@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"proj1/cmd/internal/pkg/storage"
+	"proj1/internal/pkg/storage"
 )
 
 func main() {

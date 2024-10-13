@@ -7,10 +7,17 @@ import (
 )
 
 type Value struct {
-	kind string
+	kind Kind
 	st   string
 	d    string
 }
+
+type Kind string
+
+const (
+	KindString Kind = "S"
+	KindInt    Kind = "D"
+)
 
 type Storage struct {
 	inner  map[string]Value
@@ -22,37 +29,36 @@ func NewStorage() (Storage, error) {
 	if err != nil {
 		return Storage{}, err
 	}
-	// defer logger.Sync()
-	// logger.Info("Created new storage")
+	defer logger.Sync()
+	logger.Info("Created new storage")
 	return Storage{inner: make(map[string]Value),
 		logger: logger}, nil
 }
+
 func (r Storage) Set(key, val string) {
 	var val1 Value
 	if _, err := strconv.Atoi(val); err == nil {
-		val1 = Value{kind: "D", st: "", d: val}
+		val1 = Value{kind: KindInt, d: val}
 	} else {
-		val1 = Value{kind: "S", st: val, d: ""}
+		val1 = Value{kind: KindString, st: val}
 	}
 	r.inner[key] = val1
-	// r.logger.Info("key has been set")
-	// r.logger.Sync()
+	r.logger.Info("key has been set")
 }
+
 func (r Storage) Get(key string) *string {
 	res, ok := r.inner[key]
 	if !ok {
 		return nil
 	}
-	// r.logger.Info("val got")
-	// r.logger.Sync()
-	if res.kind == "S" {
+	r.logger.Info("val got")
+	if res.kind == KindString {
 		return &(res).st
-	} else {
-		return &(res).d
 	}
+	return &(res).d
 }
 
 func (r Storage) GetKind(key string) string {
 	res := r.inner[key]
-	return res.kind
+	return string(res.kind)
 }
