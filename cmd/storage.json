@@ -1,0 +1,17 @@
+{
+  "key1": {
+    "Kind": "S",
+    "St": [
+      "jjjj",
+      "mmmm"
+    ],
+    "D": null
+  },
+  "key2": {
+    "Kind": "S",
+    "St": [
+      "pppp"
+    ],
+    "D": null
+  }
+}
