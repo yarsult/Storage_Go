@@ -1,0 +1,5 @@
+.vscode/settings.json
+.DS_Store
+.json
+cmd/storage.json
+cmd/slice_storage.json

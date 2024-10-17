@@ -1,0 +1,7 @@
+goos: darwin
+goarch: arm64
+pkg: proj1/internal/pkg/storage
+cpu: Apple M3 Pro
+BenchmarkGetKind-11    	155536989	         7.595 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	proj1/internal/pkg/storage	2.229s
