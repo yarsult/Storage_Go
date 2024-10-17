@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math"
 	"os"
-	"path/filepath"
+	"proj1/internal/pkg/saving"
 	"slices"
 	"strconv"
 
@@ -192,28 +192,13 @@ func (s SliceStorage) LGet(key string, index int) (string, error) {
 	return res[index], nil
 }
 
-func (s SliceStorage) WriteAtomic(path string, b []byte) error {
-	dir := filepath.Dir(path)
-	filename := filepath.Base(path)
-	tmpPathName := filepath.Join(dir, filename+".tmp")
-	err := os.WriteFile(tmpPathName, b, 0755)
-	if err != nil {
-		s.logger.Error("Failed to write JSON to file", zap.Error(err))
-		return err
-	}
-	defer func() {
-		os.Remove(tmpPathName)
-	}()
-	return os.Rename(tmpPathName, path)
-}
-
 func (s SliceStorage) SaveToFile(filename string) error {
 	data, err := json.MarshalIndent(s.inner, "", "  ")
 	if err != nil {
 		s.logger.Error("Failed to marshal SliceStorage to JSON", zap.Error(err))
 		return err
 	}
-	err = s.WriteAtomic(filename, data)
+	err = saving.WriteAtomic(filename, data)
 	if err != nil {
 		s.logger.Error("Failed to write JSON to file", zap.Error(err))
 		return err

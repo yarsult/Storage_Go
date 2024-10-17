@@ -3,7 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
+	"proj1/internal/pkg/saving"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -49,36 +49,21 @@ func (r Storage) Set(key, val string) {
 	r.logger.Info("key has been set")
 }
 
-func (r Storage) Get(key string) *string {
+func (r Storage) Get(key string) (string, bool) {
 	res, ok := r.inner[key]
 	if !ok {
-		return nil
+		return "", false
 	}
 	r.logger.Info("val got")
 	if res.kind == KindString {
-		return &(res).st
+		return res.st, true
 	}
-	return &(res).d
+	return res.d, true
 }
 
 func (r Storage) GetKind(key string) string {
 	res := r.inner[key]
 	return string(res.kind)
-}
-
-func (r Storage) WriteAtomic(path string, b []byte) error {
-	dir := filepath.Dir(path)
-	filename := filepath.Base(path)
-	tmpPathName := filepath.Join(dir, filename+".tmp")
-	err := os.WriteFile(tmpPathName, b, 0755)
-	if err != nil {
-		r.logger.Error("Failed to write JSON to file", zap.Error(err))
-		return err
-	}
-	defer func() {
-		os.Remove(tmpPathName)
-	}()
-	return os.Rename(tmpPathName, path)
 }
 
 func (r Storage) SaveToFile(filename string) error {
@@ -87,7 +72,7 @@ func (r Storage) SaveToFile(filename string) error {
 		r.logger.Error("Failed to marshal SliceStorage to JSON", zap.Error(err))
 		return err
 	}
-	err = r.WriteAtomic(filename, data)
+	err = saving.WriteAtomic(filename, data)
 	if err != nil {
 		r.logger.Error("Failed to write JSON to file", zap.Error(err))
 		return err

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"proj1/internal/pkg/storage"
 
@@ -44,7 +43,7 @@ func (r *Server) handlerSet(ctx *gin.Context) {
 
 	var v Entry
 
-	if err := json.NewDecoder(ctx.Request.Body).Decode(&v); err != nil {
+	if err := ctx.Bind(&v); err != nil {
 		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
@@ -57,13 +56,13 @@ func (r *Server) handlerSet(ctx *gin.Context) {
 func (r *Server) handlerGet(ctx *gin.Context) {
 	key := ctx.Param("key")
 
-	v := r.storage.Get(key)
-	if v == nil {
+	v, ok := r.storage.Get(key)
+	if !ok {
 		ctx.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, Entry{Value: *v})
+	ctx.JSON(http.StatusOK, Entry{Value: v})
 }
 
 func (r *Server) Start() {
