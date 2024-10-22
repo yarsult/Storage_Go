@@ -13,7 +13,7 @@ func TestSetGet(t *testing.T) {
 		{"testing", "tests"},
 		{"go", "golang"},
 	}
-	stor, err := NewStorage()
+	stor, err := NewSliceStorage()
 	if err != nil {
 		t.Errorf("new storage: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestKind(t *testing.T) {
 		{"testing", "tests", "S"},
 		{"go", "45678", "D"},
 	}
-	stor, err := NewStorage()
+	stor, err := NewSliceStorage()
 	if err != nil {
 		t.Errorf("new storage: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestKind(t *testing.T) {
 }
 
 func BenchmarkGet(b *testing.B) {
-	stor, err := NewStorage()
+	stor, err := NewSliceStorage()
 	if err != nil {
 		b.Fatalf("not able to create storage: %v", err)
 	}
@@ -71,7 +71,7 @@ func BenchmarkGet(b *testing.B) {
 }
 
 func BenchmarkSet(b *testing.B) {
-	stor, err := NewStorage()
+	stor, err := NewSliceStorage()
 	if err != nil {
 		b.Fatalf("not able to create storage: %v", err)
 	}
@@ -83,7 +83,7 @@ func BenchmarkSet(b *testing.B) {
 }
 
 func BenchmarkSetGet(b *testing.B) {
-	stor, err := NewStorage()
+	stor, err := NewSliceStorage()
 	if err != nil {
 		b.Fatalf("not able to create storage: %v", err)
 	}
@@ -98,7 +98,7 @@ func BenchmarkSetGet(b *testing.B) {
 }
 
 func BenchmarkGetKind(b *testing.B) {
-	stor, err := NewStorage()
+	stor, err := NewSliceStorage()
 	if err != nil {
 		b.Fatalf("not able to create storage: %v", err)
 	}

@@ -13,7 +13,7 @@ import (
 
 func TestHandlerSetSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	stor, _ := storage.NewStorage()
+	stor, _ := storage.NewSliceStorage()
 	s := New("localhost:8090", &stor)
 	router := s.newAPI()
 	w := httptest.NewRecorder()
@@ -28,7 +28,7 @@ func TestHandlerSetSuccess(t *testing.T) {
 
 func TestHandlerSetBadRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	stor, _ := storage.NewStorage()
+	stor, _ := storage.NewSliceStorage()
 	s := New("localhost:8090", &stor)
 	router := s.newAPI()
 	w := httptest.NewRecorder()
@@ -41,7 +41,7 @@ func TestHandlerSetBadRequest(t *testing.T) {
 
 func TestHandlerGetSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	stor, _ := storage.NewStorage()
+	stor, _ := storage.NewSliceStorage()
 	stor.Set("testkey", "testvalue")
 	s := New("localhost:8090", &stor)
 	router := s.newAPI()
@@ -56,7 +56,7 @@ func TestHandlerGetSuccess(t *testing.T) {
 
 func TestHandlerGetNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	stor, _ := storage.NewStorage()
+	stor, _ := storage.NewSliceStorage()
 	s := New("localhost:8090", &stor)
 	router := s.newAPI()
 	w := httptest.NewRecorder()
