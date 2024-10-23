@@ -34,7 +34,7 @@ func (r *Server) newAPI() *gin.Engine {
 		ctx.Status(http.StatusOK)
 	})
 
-	engine.POST("/scalar/set/:key", r.handlerSet)
+	engine.POST("/scalar/set/:key/:value", r.handlerSet)
 	engine.GET("/scalar/get/:key", r.handlerGet)
 
 	engine.POST("/map/hset/:key", r.handlerHSet)
@@ -48,25 +48,45 @@ func (r *Server) newAPI() *gin.Engine {
 	engine.GET("/slice/rpop/:key", r.handlerRPop)
 	engine.GET("/slice/lget/:key/:index", r.handlerLGet)
 
+	engine.POST("/any/expire/:key/:seconds", r.handlerExpire)
 	return engine
 }
 
 func (r *Server) handlerSet(ctx *gin.Context) {
 	key := ctx.Param("key")
-	var v Entry
-	if err := ctx.Bind(&v); err != nil {
-		ctx.AbortWithStatus(http.StatusBadRequest)
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
 		return
 	}
-
-	r.storage.Set(key, v.Value)
+	value := ctx.Param("value")
+	err := r.storage.Set(key, value)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
+	exp := ctx.Query("exp")
+	if exp != "" {
+		tmp, err := strconv.ParseInt(exp, 10, 64)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "uncorrect expiration time"})
+			r.storage.SaveToFile("slice_storage.json")
+			return
+		}
+		r.storage.Expire(key, tmp)
+	}
 	ctx.Status(http.StatusOK)
 	r.storage.SaveToFile("slice_storage.json")
 }
 
 func (r *Server) handlerGet(ctx *gin.Context) {
 	key := ctx.Param("key")
-
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	v, ok := r.storage.Get(key)
 	fmt.Println(ok)
 	if !ok {
@@ -79,6 +99,11 @@ func (r *Server) handlerGet(ctx *gin.Context) {
 
 func (r *Server) handlerHGet(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	field := ctx.Param("field")
 	res, err := r.storage.HGet(key, field)
 	if err != nil || res == nil {
@@ -90,6 +115,11 @@ func (r *Server) handlerHGet(ctx *gin.Context) {
 
 func (r *Server) handlerHSet(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	var maps []map[string]string
 	if err := ctx.Bind(&maps); err != nil {
 		ctx.AbortWithStatus(http.StatusBadRequest)
@@ -106,6 +136,11 @@ func (r *Server) handlerHSet(ctx *gin.Context) {
 
 func (r *Server) handlerLPush(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	var vals []string
 	if err := ctx.Bind(&vals); err != nil {
 		ctx.AbortWithStatus(http.StatusBadRequest)
@@ -118,6 +153,11 @@ func (r *Server) handlerLPush(ctx *gin.Context) {
 
 func (r *Server) handlerRPush(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	var vals []string
 	if err := ctx.Bind(&vals); err != nil {
 		ctx.AbortWithStatus(http.StatusBadRequest)
@@ -130,6 +170,11 @@ func (r *Server) handlerRPush(ctx *gin.Context) {
 
 func (r *Server) handlerRAddToSet(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	var vals []string
 	if err := ctx.Bind(&vals); err != nil {
 		ctx.AbortWithStatus(http.StatusBadRequest)
@@ -142,6 +187,11 @@ func (r *Server) handlerRAddToSet(ctx *gin.Context) {
 
 func (r *Server) handlerLPop(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	startstr := ctx.Query("start")
 	if startstr == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "start index is required"})
@@ -175,6 +225,11 @@ func (r *Server) handlerLPop(ctx *gin.Context) {
 
 func (r *Server) handlerRPop(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	startstr := ctx.Query("start")
 	if startstr == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "start index is required"})
@@ -208,6 +263,11 @@ func (r *Server) handlerRPop(ctx *gin.Context) {
 
 func (r *Server) handlerLSet(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	ind, err := strconv.Atoi(ctx.Param("index"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "index must be integer"})
@@ -225,6 +285,11 @@ func (r *Server) handlerLSet(ctx *gin.Context) {
 
 func (r *Server) handlerLGet(ctx *gin.Context) {
 	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
 	ind, err := strconv.Atoi(ctx.Param("index"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "index must be integer"})
@@ -232,6 +297,27 @@ func (r *Server) handlerLGet(ctx *gin.Context) {
 	res, err := r.storage.LGet(key, ind)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid index"})
+		return
+	}
+	ctx.JSON(http.StatusOK, res)
+	r.storage.SaveToFile("slice_storage.json")
+}
+
+func (r *Server) handlerExpire(ctx *gin.Context) {
+	key := ctx.Param("key")
+	if r.storage.CheckIfExpired(key) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "element has expired"})
+		r.storage.SaveToFile("slice_storage.json")
+		return
+	}
+	seconds, err := strconv.ParseInt(ctx.Param("seconds"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid time"})
+		return
+	}
+	res := r.storage.Expire(key, seconds)
+	if res == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid key"})
 		return
 	}
 	ctx.JSON(http.StatusOK, res)

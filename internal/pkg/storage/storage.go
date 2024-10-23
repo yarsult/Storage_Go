@@ -8,23 +8,28 @@ import (
 	"proj1/internal/pkg/saving"
 	"slices"
 	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"go.uber.org/zap"
 )
 
 type SliceValue struct {
-	Kind  Kind
-	St_sl []string
-	D_sl  []string
-	St    string
-	D     string
-	Mint  map[string]int
-	Mstr  map[string]string
+	Kind       Kind
+	Expires_at int64
+	St_sl      []string
+	D_sl       []string
+	St         string
+	D          string
+	Mint       map[string]int
+	Mstr       map[string]string
 }
 
 type SliceStorage struct {
 	inner  map[string]SliceValue
 	logger *zap.Logger
+	mu     sync.RWMutex
 }
 
 type Kind string
@@ -44,23 +49,27 @@ func NewSliceStorage() (SliceStorage, error) {
 		return SliceStorage{}, err
 	}
 	defer logger.Sync()
-	logger.Info("Created new storage for slices")
+	logger.Info("Created new storage")
 	return SliceStorage{inner: make(map[string]SliceValue),
 		logger: logger}, nil
 }
 
-func (s SliceStorage) Set(key, val string) {
+func (s *SliceStorage) Set(key, val string) error {
 	var val1 SliceValue
-	if _, err := strconv.Atoi(val); err == nil {
-		val1 = SliceValue{Kind: KindInt, D: val}
+	if strings.HasPrefix(val, `"`) && strings.HasSuffix(val, `"`) {
+		val1 = SliceValue{Kind: KindString, St: strings.Trim(val, `"`)}
 	} else {
-		val1 = SliceValue{Kind: KindString, St: val}
+		if _, err := strconv.Atoi(val); err != nil {
+			return errors.New("uncorrect string")
+		}
+		val1 = SliceValue{Kind: KindInt, D: val}
 	}
 	s.inner[key] = val1
 	s.logger.Info("key has been set")
+	return nil
 }
 
-func (s SliceStorage) Get(key string) (string, bool) {
+func (s *SliceStorage) Get(key string) (string, bool) {
 	res, ok := s.inner[key]
 	if !ok {
 		return "", false
@@ -72,12 +81,12 @@ func (s SliceStorage) Get(key string) (string, bool) {
 	return res.D, true
 }
 
-func (s SliceStorage) GetKind(key string) string {
+func (s *SliceStorage) GetKind(key string) string {
 	res := s.inner[key]
 	return string(res.Kind)
 }
 
-func (s SliceStorage) HSet(key string, maps []map[string]string) (int, error) {
+func (s *SliceStorage) HSet(key string, maps []map[string]string) (int, error) {
 	other_types := []Kind{KindInt, KindSliceInt, KindSliceStr, KindString}
 	if slices.Contains(other_types, s.inner[key].Kind) {
 		s.logger.Info("uncorrect indexes")
@@ -104,7 +113,7 @@ func (s SliceStorage) HSet(key string, maps []map[string]string) (int, error) {
 	return len(final2), nil
 }
 
-func (s SliceStorage) HGet(key string, field string) (*string, error) {
+func (s *SliceStorage) HGet(key string, field string) (*string, error) {
 	res := s.inner[key]
 	res1, ok1 := res.Mint[field]
 	res2, ok2 := res.Mstr[field]
@@ -124,21 +133,21 @@ func (s SliceStorage) HGet(key string, field string) (*string, error) {
 	return &res2, nil
 }
 
-func (s SliceStorage) createIfEmpty(values []string) SliceValue {
+func (s *SliceStorage) createIfEmpty(values []string) SliceValue {
 	if _, err := strconv.Atoi(values[0]); err == nil {
 		return SliceValue{Kind: KindSliceInt}
 	}
 	return SliceValue{Kind: KindSliceStr}
 }
 
-func (s SliceStorage) defineKind(key string) []string {
+func (s *SliceStorage) defineKind(key string) []string {
 	if s.inner[key].Kind == KindSliceInt {
 		return s.inner[key].D_sl
 	}
 	return s.inner[key].St_sl
 }
 
-func (s SliceStorage) addToAppropriate(key string, values []string, cur SliceValue) {
+func (s *SliceStorage) addToAppropriate(key string, values []string, cur SliceValue) {
 	if cur.Kind == KindSliceInt {
 		for _, x := range values {
 			if _, err := strconv.Atoi(x); err != nil {
@@ -152,20 +161,19 @@ func (s SliceStorage) addToAppropriate(key string, values []string, cur SliceVal
 	}
 }
 
-func (s SliceStorage) LPush(key string, values []string) {
+func (s *SliceStorage) LPush(key string, values []string) {
 	val, ok := s.inner[key]
 	var tmp []string
 	tmp = append(tmp, values...)
 	slices.Reverse(tmp)
 	if !ok {
 		s.addToAppropriate(key, tmp, s.createIfEmpty(values))
-
 	} else {
 		s.addToAppropriate(key, append(tmp, s.defineKind(key)...), val)
 	}
 }
 
-func (s SliceStorage) RPush(key string, values []string) {
+func (s *SliceStorage) RPush(key string, values []string) {
 	val, ok := s.inner[key]
 	var tmp []string
 	tmp = append(tmp, values...)
@@ -177,7 +185,7 @@ func (s SliceStorage) RPush(key string, values []string) {
 	}
 }
 
-func (s SliceStorage) RAddToSet(key string, values []string) {
+func (s *SliceStorage) RAddToSet(key string, values []string) {
 	val, ok := s.inner[key]
 	var tmp []string
 	if !ok {
@@ -194,7 +202,7 @@ func (s SliceStorage) RAddToSet(key string, values []string) {
 	}
 }
 
-func (s SliceStorage) LPop(key string, indexes ...int) []string {
+func (s *SliceStorage) LPop(key string, indexes ...int) []string {
 	var start int
 	end := indexes[0]
 	if len(indexes) == 2 {
@@ -224,7 +232,7 @@ func (s SliceStorage) LPop(key string, indexes ...int) []string {
 	return res[start:end]
 }
 
-func (s SliceStorage) RPop(key string, indexes ...int) []string {
+func (s *SliceStorage) RPop(key string, indexes ...int) []string {
 	var start int
 	end := indexes[0]
 	val, ok := s.inner[key]
@@ -259,7 +267,7 @@ func (s SliceStorage) RPop(key string, indexes ...int) []string {
 	return res[start:end]
 }
 
-func (s SliceStorage) LSet(key string, index int, elem string) (string, error) {
+func (s *SliceStorage) LSet(key string, index int, elem string) (string, error) {
 	_, ok := s.inner[key]
 	if !ok {
 		s.logger.Info("no such key")
@@ -274,7 +282,7 @@ func (s SliceStorage) LSet(key string, index int, elem string) (string, error) {
 	return "ok", nil
 }
 
-func (s SliceStorage) LGet(key string, index int) (string, error) {
+func (s *SliceStorage) LGet(key string, index int) (string, error) {
 	_, ok := s.inner[key]
 	if !ok {
 		s.logger.Info("no such key")
@@ -288,7 +296,7 @@ func (s SliceStorage) LGet(key string, index int) (string, error) {
 	return res[index], nil
 }
 
-func (s SliceStorage) SaveToFile(filename string) error {
+func (s *SliceStorage) SaveToFile(filename string) error {
 	data, err := json.MarshalIndent(s.inner, "", "  ")
 	if err != nil {
 		s.logger.Error("Failed to marshal SliceStorage to JSON", zap.Error(err))
@@ -318,4 +326,51 @@ func (s *SliceStorage) LoadFromFile(filename string) error {
 	s.inner = inner
 	s.logger.Info("SliceStorage successfully loaded from file", zap.String("filename", filename))
 	return nil
+}
+
+func (s *SliceStorage) CheckIfExpired(key string) bool {
+	if time.Now().UnixMilli() >= s.inner[key].Expires_at && s.inner[key].Expires_at != 0 {
+		s.logger.Info("expired")
+		delete(s.inner, key)
+		return true
+	}
+	return false
+}
+
+func (s *SliceStorage) Expire(key string, seconds int64) int {
+	if res, ok := s.inner[key]; ok {
+		res.Expires_at = time.Now().UnixMilli() + seconds
+		s.inner[key] = res
+		return 1
+	}
+	return 0
+}
+
+func (s *SliceStorage) Clean(file string) {
+	var expiredKeys []string
+	s.mu.RLock()
+	for key, val := range s.inner {
+		if time.Now().UnixMilli() >= val.Expires_at && s.inner[key].Expires_at != 0 {
+			expiredKeys = append(expiredKeys, key)
+		}
+	}
+	s.mu.RUnlock()
+	s.mu.Lock()
+	for _, key := range expiredKeys {
+		s.logger.Info("Deleting expired key: " + key)
+		delete(s.inner, key)
+	}
+	s.mu.Unlock()
+	s.SaveToFile(file)
+}
+
+func (s *SliceStorage) IWantToSleepFor(closeChan chan struct{}, interval time.Duration, file string) {
+	for {
+		select {
+		case <-closeChan:
+			return
+		case <-time.After(interval):
+			s.Clean(file)
+		}
+	}
 }
