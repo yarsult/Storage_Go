@@ -3,3 +3,4 @@
 .json
 cmd/storage.json
 cmd/slice_storage.json
+internal/pkg/.DS_Store
