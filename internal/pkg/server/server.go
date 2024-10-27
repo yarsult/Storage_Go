@@ -61,8 +61,11 @@ func (r *Server) registerRoutes() {
 	{
 		slice.POST("lpush/:key", r.handlerLPush)
 		slice.POST("rpush/:key", r.handlerRPush)
+		slice.POST("raddtoset/:key", r.handlerRAddToSet)
+		slice.POST("/slice/lset/:key/:index/:elem", r.handlerLSet)
 		slice.GET("lpop/:key", r.handlerLPop)
 		slice.GET("rpop/:key", r.handlerRPop)
+		slice.GET("/slice/lget/:key/:index", r.handlerLGet)
 	}
 	r.engine.POST("/any/expire/:key/:seconds", r.handlerExpire)
 }
