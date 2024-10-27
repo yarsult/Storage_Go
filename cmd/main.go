@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"proj1/internal/pkg/server"
@@ -24,11 +30,41 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	stor2.LoadFromFile(file)
+	var wg sync.WaitGroup
 	closeChan := make(chan struct{})
-	go stor2.IWantToSleepFor(closeChan, 10*time.Second, file)
+
+	stor2.LoadFromFile(file)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		stor2.PeriodicClean(closeChan, 10*time.Minute, file)
+	}()
+
 	srv := server.New(":8090", &stor2)
-	srv.Start()
+
+	go func() {
+		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %s\n", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	<-quit
+	fmt.Println("\nShutting down...")
+
+	close(closeChan)
+	wg.Wait()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Shutdown error: %s\n", err)
+	}
+
+	fmt.Println("Server exited")
 	// stor2.Set("intval", "ingfdt")
 	// fmt.Println(stor2.Get("intval"))
 	// fmt.Println(stor2.HSet("mkey", []map[string]string{{"hs1": "v1"}, {"hs3": "v3"}}))
@@ -61,10 +97,6 @@ func main() {
 	// if ok {
 	// 	fmt.Println(res2, s.GetKind("key2"))
 	// }
-	err = stor2.SaveToFile("slice_storage.json")
-	if err != nil {
-		fmt.Println("Error saving storage:", err)
-	}
 	//s.SaveToFile("storage.json")
 
 }
