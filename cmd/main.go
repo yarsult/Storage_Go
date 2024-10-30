@@ -25,22 +25,29 @@ func main() {
 	// 	panic(err)
 	// }
 	//
-
-	stor2, err := storage.NewSliceStorage()
+	filePath := os.Getenv("STORAGE_FILE_PATH")
+	if filePath == "" {
+		filePath = file
+	}
+	fmt.Println(filePath)
+	stor2, err := storage.NewSliceStorage(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	var wg sync.WaitGroup
 	closeChan := make(chan struct{})
 
-	stor2.LoadFromFile(file)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		stor2.PeriodicClean(closeChan, 10*time.Minute, file)
+		stor2.PeriodicClean(closeChan, 10*time.Minute, filePath)
 	}()
-
-	srv := server.New(":8090", &stor2)
+	serverPort, ok := os.LookupEnv("BASIC_SERVER_PORT")
+	if !ok {
+		serverPort = "8090"
+	}
+	stor2.LoadFromFile(filePath)
+	srv := server.New(":"+serverPort, &stor2)
 
 	go func() {
 		if err := srv.Start(); err != nil && err != http.ErrServerClosed {
@@ -49,18 +56,17 @@ func main() {
 	}()
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	<-quit
-	fmt.Println("\nShutting down...")
-
 	close(closeChan)
 	wg.Wait()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
+	err = srv.Shutdown(ctx)
+	log.Fatalf("%s", err)
+	if err != nil {
 		log.Fatalf("Shutdown error: %s\n", err)
 	}
 

@@ -10,10 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const (
-	file = "slice_storage.json"
-)
-
 type Server struct {
 	host    string
 	storage *storage.SliceStorage
@@ -73,7 +69,11 @@ func (r *Server) registerRoutes() {
 func (r *Server) handlerSet(ctx *gin.Context) {
 	key := ctx.Param("key")
 	value := ctx.Param("value")
-	r.storage.Set(key, value)
+	err := r.storage.Set(key, value)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set key"})
+		return
+	}
 
 	exp := ctx.Query("exp")
 	if exp != "" {
@@ -349,7 +349,7 @@ func (r *Server) Start() error {
 func (r *Server) Shutdown(ctx context.Context) error {
 	fmt.Println("Shutting down server...")
 
-	if err := r.storage.SaveToFile(file); err != nil {
+	if err := r.storage.SaveToFile(r.storage.Path); err != nil {
 		fmt.Println("Error saving storage:", err)
 		return err
 	}

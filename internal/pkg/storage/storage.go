@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"proj1/internal/pkg/saving"
@@ -28,6 +29,7 @@ type SliceStorage struct {
 	inner  map[string]SliceValue
 	logger *zap.Logger
 	mu     sync.RWMutex
+	Path   string
 }
 
 type Kind string
@@ -41,7 +43,7 @@ const (
 	KindMapStr   Kind = "MS"
 )
 
-func NewSliceStorage() (SliceStorage, error) {
+func NewSliceStorage(file string) (SliceStorage, error) {
 	logger, err := zap.NewProduction()
 	if err != nil {
 		return SliceStorage{}, err
@@ -50,13 +52,12 @@ func NewSliceStorage() (SliceStorage, error) {
 	defer logger.Sync()
 	logger.Info("Created new storage")
 	return SliceStorage{inner: make(map[string]SliceValue),
-		logger: logger}, nil
+		logger: logger, Path: file}, nil
 }
 
 func (s *SliceStorage) Set(key, val string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	var val1 SliceValue
 	if strings.HasPrefix(val, `"`) && strings.HasSuffix(val, `"`) {
 		val1 = SliceValue{Kind: KindString, St: strings.Trim(val, `"`)}
@@ -69,6 +70,7 @@ func (s *SliceStorage) Set(key, val string) error {
 
 	s.inner[key] = val1
 	s.logger.Info("key has been set")
+	fmt.Println(s.inner)
 	return nil
 }
 
@@ -367,7 +369,6 @@ func (s *SliceStorage) LGet(key string, index int) (string, error) {
 func (s *SliceStorage) SaveToFile(filename string) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	data, err := json.MarshalIndent(s.inner, "", "  ")
 	if err != nil {
 		s.logger.Error("Failed to marshal SliceStorage to JSON", zap.Error(err))
@@ -387,7 +388,7 @@ func (s *SliceStorage) SaveToFile(filename string) error {
 func (s *SliceStorage) LoadFromFile(filename string) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
+	fmt.Println(filename)
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		s.logger.Error("Failed to read file", zap.Error(err))
