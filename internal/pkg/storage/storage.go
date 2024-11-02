@@ -3,7 +3,6 @@ package storage
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"os"
 	"proj1/internal/pkg/saving"
@@ -70,7 +69,6 @@ func (s *SliceStorage) Set(key, val string) error {
 
 	s.inner[key] = val1
 	s.logger.Info("key has been set")
-	fmt.Println(s.inner)
 	return nil
 }
 
@@ -388,7 +386,6 @@ func (s *SliceStorage) SaveToFile(filename string) error {
 func (s *SliceStorage) LoadFromFile(filename string) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	fmt.Println(filename)
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		s.logger.Error("Failed to read file", zap.Error(err))
