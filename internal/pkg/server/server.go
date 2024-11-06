@@ -64,6 +64,7 @@ func (r *Server) registerRoutes() {
 		slice.GET("/slice/lget/:key/:index", r.handlerLGet)
 	}
 	r.engine.POST("/any/expire/:key/:seconds", r.handlerExpire)
+	r.engine.GET("/keys/:exp", r.handlerRegExpKeys)
 }
 
 func (r *Server) handlerSet(ctx *gin.Context) {
@@ -332,6 +333,17 @@ func (r *Server) handlerExpire(ctx *gin.Context) {
 	res := r.storage.Expire(key, seconds)
 	if res == 0 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid key"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (r *Server) handlerRegExpKeys(ctx *gin.Context) {
+	exp := ctx.Param("exp")
+	res, err := r.storage.RegExKeys(exp)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid expression"})
 		return
 	}
 

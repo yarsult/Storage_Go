@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"proj1/internal/pkg/saving"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -362,6 +363,30 @@ func (s *SliceStorage) LGet(key string, index int) (string, error) {
 	}
 
 	return res[index], nil
+}
+
+func (s *SliceStorage) RegExKeys(ex string) ([]string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	re, err := regexp.Compile(ex)
+	if err != nil {
+		s.logger.Info("not correct expression")
+		return nil, errors.New("not correct expression")
+	}
+
+	var keys []string
+	for key := range s.inner {
+		keys = append(keys, key)
+	}
+
+	var res []string
+	for _, x := range keys {
+		if re.MatchString(x) {
+			res = append(res, x)
+		}
+	}
+	return res, nil
 }
 
 func (s *SliceStorage) SaveToFile(filename string) error {
