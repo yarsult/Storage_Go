@@ -10,10 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const (
-	file = "slice_storage.json"
-)
-
 type Server struct {
 	host    string
 	storage *storage.SliceStorage
@@ -68,12 +64,17 @@ func (r *Server) registerRoutes() {
 		slice.GET("/slice/lget/:key/:index", r.handlerLGet)
 	}
 	r.engine.POST("/any/expire/:key/:seconds", r.handlerExpire)
+	r.engine.GET("/keys/:exp", r.handlerRegExpKeys)
 }
 
 func (r *Server) handlerSet(ctx *gin.Context) {
 	key := ctx.Param("key")
 	value := ctx.Param("value")
-	r.storage.Set(key, value)
+	err := r.storage.Set(key, value)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set key"})
+		return
+	}
 
 	exp := ctx.Query("exp")
 	if exp != "" {
@@ -338,6 +339,17 @@ func (r *Server) handlerExpire(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
+func (r *Server) handlerRegExpKeys(ctx *gin.Context) {
+	exp := ctx.Param("exp")
+	res, err := r.storage.RegExKeys(exp)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid expression"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
 func (r *Server) Start() error {
 	fmt.Println("Starting server at", r.host)
 	if err := r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -349,7 +361,7 @@ func (r *Server) Start() error {
 func (r *Server) Shutdown(ctx context.Context) error {
 	fmt.Println("Shutting down server...")
 
-	if err := r.storage.SaveToFile(file); err != nil {
+	if err := r.storage.SaveToFile(r.storage.Path); err != nil {
 		fmt.Println("Error saving storage:", err)
 		return err
 	}

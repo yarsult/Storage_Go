@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	file = "slice_storage.json"
+)
+
 func setupTestServer(stor *storage.SliceStorage) *gin.Engine {
 	s := New("localhost:8090", stor)
 	return s.engine
@@ -18,7 +22,7 @@ func setupTestServer(stor *storage.SliceStorage) *gin.Engine {
 func TestHandlerSetSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	stor2, _ := storage.NewSliceStorage()
+	stor2, _ := storage.NewSliceStorage(file)
 	router := setupTestServer(&stor2)
 
 	w := httptest.NewRecorder()
@@ -31,7 +35,7 @@ func TestHandlerSetSuccess(t *testing.T) {
 
 func TestHandlerSetBadRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	stor2, _ := storage.NewSliceStorage()
+	stor2, _ := storage.NewSliceStorage(file)
 	router := setupTestServer(&stor2)
 
 	w := httptest.NewRecorder()
@@ -47,7 +51,7 @@ func TestHandlerSetBadRequest(t *testing.T) {
 func TestHandlerGetSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	stor2, _ := storage.NewSliceStorage()
+	stor2, _ := storage.NewSliceStorage(file)
 	stor2.Set("testkey", "42")
 	router := setupTestServer(&stor2)
 
@@ -64,7 +68,7 @@ func TestHandlerGetSuccess(t *testing.T) {
 func TestHandlerGetNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	stor2, _ := storage.NewSliceStorage()
+	stor2, _ := storage.NewSliceStorage(file)
 	router := setupTestServer(&stor2)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/scalar/get/nonexistent", nil)

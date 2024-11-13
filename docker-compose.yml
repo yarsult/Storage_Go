@@ -1,0 +1,29 @@
+services:
+  postgres:
+      image: postgres:13.3
+      ports:
+          - "5432:5432"
+      volumes:
+          - postgres:/var/lib/postgresql/data
+  server:
+    build:
+      context: .                
+      dockerfile: Dockerfile
+    container_name: storage_server_container
+    depends_on:
+        - "postgres"
+    ports:
+      - "${BASIC_SERVER_PORT:-8090}:8090"  
+    environment:
+      - POSTGRES=postgresql://username:password@postgres:5432/test?sslmode=disable
+      - BASIC_SERVER_PORT=8090
+      - STORAGE_FILE_PATH=/app/cmd/slice_storage.json
+      
+    volumes:
+      - ./cmd:/app/cmd:consistent
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+
+volumes:
+  postgres:
+ 

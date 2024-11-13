@@ -5,3 +5,4 @@ cpu: Apple M3 Pro
 BenchmarkSetGet-11    	121591825	         9.661 ns/op	       0 B/op	       0 allocs/op
 PASS
 ok  	proj1/internal/pkg/storage	2.145s
+
