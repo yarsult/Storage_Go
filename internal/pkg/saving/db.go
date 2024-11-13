@@ -20,6 +20,8 @@ const (
 			LIMIT 5
 		)`
 	querySave = `INSERT INTO core (timestamp, payload) VALUES ($1, $2)`
+
+	queryVacuum = `VACUUM core`
 )
 
 type StorageDB struct {
@@ -47,11 +49,13 @@ func (s *StorageDB) SaveVersion(data []byte) error {
 		log.Println("Ошибка сохранения версии:", err)
 		return err
 	}
-	rows, err := s.Db.Query("SELECT * FROM storage_versions")
+
+	_, err = s.Db.Exec(queryVacuum)
 	if err != nil {
-		log.Fatal("Failed to query storage_versions:", err)
+		log.Println("Ошибка очистки:", err)
+		return err
 	}
-	defer rows.Close()
+
 	_, err = s.Db.Exec(queryDeleteOld)
 	return err
 }

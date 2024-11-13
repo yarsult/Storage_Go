@@ -19,23 +19,28 @@ import (
 )
 
 const (
-	file = "slice_storage.json"
+	path        = "slice_storage.json"
+	envpath     = "STORAGE_FILE_PATH"
+	envpostgres = "POSTGRES"
+	envport     = "BASIC_SERVER_PORT"
 )
 
 func main() {
-	filePath := os.Getenv("STORAGE_FILE_PATH")
+	filePath := os.Getenv(envpath)
 	if filePath == "" {
-		filePath = file
+		filePath = path
 	}
 
 	stor2, err := storage.NewSliceStorage(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	storageDB, err := saving.NewStorageDB(os.Getenv("POSTGRES"))
+
+	storageDB, err := saving.NewStorageDB(os.Getenv(envpostgres))
 	if err != nil {
 		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
+
 	defer storageDB.Db.Close()
 	var wg sync.WaitGroup
 	closeChan := make(chan struct{})
@@ -44,7 +49,7 @@ func main() {
 		defer wg.Done()
 		stor2.PeriodicClean(closeChan, 10*time.Minute, filePath)
 	}()
-	serverPort, ok := os.LookupEnv("BASIC_SERVER_PORT")
+	serverPort, ok := os.LookupEnv(envport)
 	if !ok {
 		serverPort = "8090"
 	}
@@ -68,7 +73,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	err = srv.Shutdown(ctx)
-	log.Fatalf("%s", err)
 	if err != nil {
 		log.Fatalf("Shutdown error: %s\n", err)
 	}
