@@ -17,13 +17,12 @@ Storage_Go is a lightweight, file-based storage server built with Go. It offers 
 	•	PostgreSQL database (optional for advanced features)
 
 ## Steps ##
-	1.	Clone the repository:
+1. Clone the repository:
 
 ``` git clone https://github.com/yarsult/Storage_Go.git ```
 ``` cd Storage_Go ```
 
-
-  2. Run with Docker Compose
+2. Run with Docker Compose
 
 ```docker-compose up --build```
 
@@ -39,31 +38,32 @@ You can configure the application using the following environment variables:
 
 ### 📚 API Endpoints ###
 
-**Health Check**
+# Health Check #
 
 Endpoint: /health
 Method: GET
 Description: Check if the server is running.
 
-**Scalar Operations**
-	•	Set Value:
+# Scalar Operations #
+**Set Value:**
 POST /scalar/set/:key/:value
 Sets a scalar value.
 
-	•	Get Value:
+**Get Value:**
 GET /scalar/get/:key
 Retrieves the scalar value for the given key.
 
-**Slice Operations**
-	•	Push Value:
+# Slice Operations #
+**Push Value**
 POST /slice/lpush/:key
 Pushes a value to a slice.
 
-**Map Operations**
-	•	Set Field:
+# Map Operations #
+**Set Field:**
 POST /map/hset/:key
 Sets a field in a map.
-	•	Get Field:
+
+**Get Field:**
 GET /map/hget/:key/:field
 Retrieves a field value from the map.
 
