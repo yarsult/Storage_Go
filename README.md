@@ -24,7 +24,7 @@ Storage_Go is a lightweight, file-based storage server built with Go. It offers 
 
 2. Run with Docker Compose
 
-```docker-compose up --build```
+- ```docker-compose up --build```
 
 
 
