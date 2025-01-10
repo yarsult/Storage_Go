@@ -2,7 +2,7 @@
 
 Storage_Go is a lightweight, file-based storage server built with Go. It offers RESTful APIs to manage scalar values, slices, and maps, with support for persistence and periodic cleanup.
 
-### 🚀 Features ### 
+## 🚀 Features ##
 	•	Scalar, map, and slice storage with key-value pairs
 	•	Persistent storage using JSON
 	•	Periodic cleanup of expired entries
@@ -10,17 +10,17 @@ Storage_Go is a lightweight, file-based storage server built with Go. It offers 
 	•	Configurable via environment variables
 	•	Logging with zap
 
-### 🛠️ Installation ###
+## 🛠️ Installation ##
 
-## Prerequisites ##
+### Prerequisites ###
 	•	Go version 1.18 or higher
 	•	PostgreSQL database (optional for advanced features)
 
-## Steps ##
+### Steps ###
 1. Clone the repository:
 
-``` git clone https://github.com/yarsult/Storage_Go.git ```
-``` cd Storage_Go ```
+- ``` git clone https://github.com/yarsult/Storage_Go.git ```
+- ``` cd Storage_Go ```
 
 2. Run with Docker Compose
 
@@ -28,7 +28,7 @@ Storage_Go is a lightweight, file-based storage server built with Go. It offers 
 
 
 
-### 🔧 Configuration ###
+## 🔧 Configuration ##
 
 You can configure the application using the following environment variables:
 	•	STORAGE_FILE_PATH: Path to the JSON file for storage (default: slice_storage.json).
@@ -36,15 +36,15 @@ You can configure the application using the following environment variables:
 	•	POSTGRES: PostgreSQL connection string (optional for database integration).
 
 
-### 📚 API Endpoints ###
+## 📚 API Endpoints ##
 
-# Health Check #
+### Health Check ###
 
 Endpoint: /health
 Method: GET
 Description: Check if the server is running.
 
-# Scalar Operations #
+### Scalar Operations ###
 **Set Value:**
 POST /scalar/set/:key/:value
 Sets a scalar value.
@@ -53,12 +53,12 @@ Sets a scalar value.
 GET /scalar/get/:key
 Retrieves the scalar value for the given key.
 
-# Slice Operations #
+### Slice Operations ###
 **Push Value**
 POST /slice/lpush/:key
 Pushes a value to a slice.
 
-# Map Operations #
+### Map Operations ###
 **Set Field:**
 POST /map/hset/:key
 Sets a field in a map.
